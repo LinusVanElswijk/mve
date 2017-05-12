@@ -426,7 +426,7 @@ View::find_by_name(Container& container, const std::string& name)
 {
     using Element = decltype(container[0]);
     const auto equal_name = [&name](Element& e)->bool { return e.name == name; };
-    auto found = std::find_if(container.begin(), container.end(), equal_name);
+    typename Container::iterator found = std::find_if(container.begin(), container.end(), equal_name);
     return found != container.end() ? found : container.end();
 }
 

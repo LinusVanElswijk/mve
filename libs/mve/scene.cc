@@ -46,8 +46,8 @@ Scene::save_views (void)
 {
     std::cout << "Saving views to MVE files..." << std::flush;
 
-    for (auto& view : views)
-        if (view && view->is_dirty())
+    for (View::Ptr& view : views)
+        if (view->is_dirty())
             view->save_view();
     std::cout << " done." << std::endl;
 }
@@ -63,12 +63,12 @@ Scene::cache_cleanup (void)
     std::size_t released = 0;
     std::size_t affected_views = 0;
     std::size_t total_views = 0;
-    for (auto& view : this->views)
+    for (View::Ptr& view : this->views)
     {
         if (view)
         {
             ++total_views;
-            if (auto num = view->cache_cleanup())
+            if (int num = view->cache_cleanup())
             {
                 released += num;
                 ++affected_views;
@@ -135,7 +135,7 @@ Scene::init_views (void)
     /* Load views in a temp list. */
     ViewList temp_list;
     int max_id = 0;
-    for (const auto& view_file : views_dir)
+    for (const util::fs::File& view_file : views_dir)
     {
         if (view_file.name.size() < 4 || util::string::right(view_file.name, 4) != ".mve")
             continue;
@@ -152,10 +152,10 @@ Scene::init_views (void)
     this->views.clear();
     if (!temp_list.empty())
         this->views.resize(max_id + 1);
-    for (const auto& temp_view : temp_list)
+    for (const View::Ptr& temp_view : temp_list)
     {
-        auto& view =  views[temp_view->get_id()];
-        if ( view )
+        View::Ptr& view =  views[temp_view->get_id()];
+        if (view != nullptr)
         {
             std::cout << "Warning loading MVE file "
                 << view << std::endl

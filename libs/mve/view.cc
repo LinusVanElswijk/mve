@@ -300,19 +300,19 @@ int
 View::cache_cleanup (void)
 {
     int released = 0;
-    for (auto& proxy : this->images)
+    for (ImageProxy& proxy : this->images)
     {
         if (proxy.is_dirty || proxy.image.use_count() != 1)
             continue;
         proxy.image.reset();
-        ++released;
+        released += 1;
     }
-    for (auto& proxy : this->blobs)
+    for (BlobProxy& proxy : this->blobs)
     {
         if (proxy.is_dirty || proxy.blob.use_count() != 1)
             continue;
         proxy.blob.reset();
-        ++released;
+        released += 1;
     }
 
     return released;
@@ -438,7 +438,7 @@ View::set_image (ImageBase::Ptr image, std::string const& name)
     proxy.type = image->get_type();
     proxy.image = image;
 
-    auto found = find_by_name<>(images, name);
+    ImageProxies::iterator found = find_by_name<>(images, name);
     if (found != images.end())
         *found = proxy;
     else
@@ -457,7 +457,7 @@ View::set_image_ref (std::string const& filename, std::string name)
     proxy.filename = util::fs::abspath(filename);
     proxy.is_initialized = false;
 
-    auto found = find_by_name<>(images, name);
+    ImageProxies::iterator found = find_by_name<>(images, name);
     if (found != images.end())
         *found = proxy;
     else
@@ -467,7 +467,7 @@ View::set_image_ref (std::string const& filename, std::string name)
 bool
 View::remove_image (std::string const& name)
 {
-    auto found = find_by_name<>(images, name);
+    ImageProxies::iterator found = find_by_name<>(images, name);
     if (found != images.end())
     {
         this->to_delete.push_back(found->filename);
@@ -482,7 +482,7 @@ View::remove_image (std::string const& name)
 ByteImage::Ptr
 View::get_blob (std::string const& name)
 {
-    auto found = find_by_name(blobs, name);
+    BlobProxies::iterator found = find_by_name(blobs, name);
     if (found != blobs.end())
         return this->load_blob(&(*found), false);
     return ByteImage::Ptr();
@@ -491,7 +491,7 @@ View::get_blob (std::string const& name)
 View::BlobProxy const*
 View::get_blob_proxy (std::string const& name)
 {
-    auto found = find_by_name(blobs, name);
+    BlobProxies::iterator found = find_by_name(blobs, name);
     if (found != blobs.end())
     {
         this->initialize_blob(&(*found), false);
