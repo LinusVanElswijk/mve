@@ -32,7 +32,7 @@ Scene::load_scene (std::string const& base_path)
 void
 Scene::save_bundle (void)
 {
-    if (!(this->bundle && this->bundle_dirty))
+    if (this->bundle == nullptr || !this->bundle_dirty)
         return;
     std::string filename = util::fs::join_path(this->basedir, "synth_0.out");
     save_mve_bundle(this->bundle, filename);
@@ -45,7 +45,6 @@ void
 Scene::save_views (void)
 {
     std::cout << "Saving views to MVE files..." << std::flush;
-
     for (View::Ptr& view : views)
         if (view->is_dirty())
             view->save_view();
@@ -65,13 +64,13 @@ Scene::cache_cleanup (void)
     std::size_t total_views = 0;
     for (View::Ptr& view : this->views)
     {
-        if (view)
+        if (view != nullptr)
         {
-            ++total_views;
+            total_views += 1;
             if (int num = view->cache_cleanup())
             {
                 released += num;
-                ++affected_views;
+                affected_views += 1;
             }
         }
     }
@@ -95,7 +94,7 @@ Scene::get_view_mem_usage (void)
 {
     return std::accumulate(views.begin(), views.end(), std::size_t{0},
         [](std::size_t acc, const View::Ptr& view) {
-            return acc + (view ? view->get_byte_size() : 0);
+            return acc + (view != nullptr ? view->get_byte_size() : 0);
         });
 }
 
@@ -104,7 +103,7 @@ Scene::get_view_mem_usage (void)
 std::size_t
 Scene::get_bundle_mem_usage (void)
 {
-    return (this->bundle ? this->bundle->get_byte_size() : 0);
+    return (this->bundle != nullptr ? this->bundle->get_byte_size() : 0);
 }
 
 /* ---------------------------------------------------------------- */
@@ -137,7 +136,8 @@ Scene::init_views (void)
     int max_id = 0;
     for (const util::fs::File& view_file : views_dir)
     {
-        if (view_file.name.size() < 4 || util::string::right(view_file.name, 4) != ".mve")
+        if (view_file.name.size() < 4 ||
+            util::string::right(view_file.name, 4) != ".mve")
             continue;
         View::Ptr view = View::create();
         view->load_view(view_file.get_absolute_name());

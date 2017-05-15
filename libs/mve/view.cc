@@ -37,7 +37,6 @@ View::load_view (std::string const& user_path)
     this->deprecated_format_check(safe_path);
 
     /* Open meta.ini and populate images and blobs. */
-    //std::cout << "View: Loading view: " << path << std::endl;
     this->clear();
     try
     {
@@ -190,7 +189,6 @@ View::save_view_as (std::string const& user_path)
 {
     std::string safe_path = util::fs::sanitize_path(user_path);
     safe_path = util::fs::abspath(safe_path);
-    //std::cout << "View: Saving view: " << safe_path << std::endl;
 
     /* Create view directory if needed. */
     if (util::fs::file_exists(safe_path.c_str()))
@@ -257,16 +255,12 @@ View::save_view (void)
     /* Delete files of removed images and BLOBs. */
     for (std::size_t i = 0; i < this->to_delete.size(); ++i)
     {
-        //std::cout << "View: Deleting file: "
-        //    << this->to_delete[i] << std::endl;
-
         std::string fname = util::fs::join_path(this->path, this->to_delete[i]);
         if (util::fs::file_exists(fname.c_str())
             && !util::fs::unlink(fname.c_str()))
         {
             std::cerr << "View: Error deleting " << fname
                 << ": " << std::strerror(errno) << std::endl;
-            //throw util::FileException(fname, std::strerror(errno));
         }
     }
     this->to_delete.clear();
@@ -287,8 +281,10 @@ View::clear (void)
 bool
 View::is_dirty (void) const
 {
-    constexpr auto is_dirty_image = [](const ImageProxy& proxy){ return proxy.is_dirty; };
-    constexpr auto is_dirty_blob = [](const BlobProxy& proxy) { return proxy.is_dirty; };
+    constexpr auto is_dirty_image =
+            [](const ImageProxy& proxy) { return proxy.is_dirty; };
+    constexpr auto is_dirty_blob =
+            [](const BlobProxy& proxy) { return proxy.is_dirty; };
 
     return meta_data.is_dirty
            || !to_delete.empty()
@@ -438,7 +434,9 @@ View::set_image (ImageBase::Ptr image, std::string const& name)
     proxy.type = image->get_type();
     proxy.image = image;
 
-    ImageProxies::iterator found = find_by_name<>(images, name);
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p){ return p.name == name; });
+
     if (found != images.end())
         *found = proxy;
     else
@@ -457,7 +455,9 @@ View::set_image_ref (std::string const& filename, std::string name)
     proxy.filename = util::fs::abspath(filename);
     proxy.is_initialized = false;
 
-    ImageProxies::iterator found = find_by_name<>(images, name);
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p){ return p.name == name; });
+
     if (found != images.end())
         *found = proxy;
     else
@@ -467,14 +467,15 @@ View::set_image_ref (std::string const& filename, std::string name)
 bool
 View::remove_image (std::string const& name)
 {
-    ImageProxies::iterator found = find_by_name<>(images, name);
-    if (found != images.end())
-    {
-        this->to_delete.push_back(found->filename);
-        this->images.erase(found);
-        return true;
-    }
-    return false;
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p){ return p.name == name; });
+
+    if (found == images.end())
+        return false;
+
+    this->to_delete.push_back(found->filename);
+    this->images.erase(found);
+    return true;
 }
 
 /* ---------------------------------------------------------------- */
@@ -482,22 +483,24 @@ View::remove_image (std::string const& name)
 ByteImage::Ptr
 View::get_blob (std::string const& name)
 {
-    BlobProxies::iterator found = find_by_name(blobs, name);
-    if (found != blobs.end())
-        return this->load_blob(&(*found), false);
-    return ByteImage::Ptr();
+    BlobProxies::iterator found = std::find_if(blobs.begin(), blobs.end(),
+        [name](const BlobProxy& proxy) { return proxy.name == name; });
+
+    return found != blobs.end() ? this->load_blob(&(*found), false)
+                                : ByteImage::Ptr();
 }
 
 View::BlobProxy const*
 View::get_blob_proxy (std::string const& name)
 {
-    BlobProxies::iterator found = find_by_name(blobs, name);
-    if (found != blobs.end())
-    {
-        this->initialize_blob(&(*found), false);
-        return &(*found);
-    }
-    return nullptr;
+    BlobProxies::iterator found = std::find_if(blobs.begin(), blobs.end(),
+        [name](const BlobProxy& proxy) { return proxy.name == name; });
+
+    if (found == blobs.end())
+        return nullptr;
+
+    this->initialize_blob(&(*found), false);
+    return &(*found);
 }
 
 void
@@ -596,7 +599,6 @@ View::load_meta_data (std::string const& path)
 void
 View::save_meta_data (std::string const& path)
 {
-    //std::cout << "View: Saving meta data: " VIEW_IO_META_FILE << std::endl;
     std::string const fname = util::fs::join_path(path, VIEW_IO_META_FILE);
     std::string const fname_new = fname + ".new";
 
@@ -651,9 +653,6 @@ View::populate_images_and_blobs (std::string const& path)
         if (ext4 == ".png" || ext4 == ".jpg" ||
             ext5 == ".jpeg" || ext5 == ".mvei")
         {
-            //std::cout << "View: Adding image proxy: "
-            //    << file.name << std::endl;
-
             ImageProxy proxy;
             proxy.is_dirty = false;
             proxy.filename = file.name;
@@ -662,9 +661,6 @@ View::populate_images_and_blobs (std::string const& path)
         }
         else if (ext5 == ".blob")
         {
-            //std::cout << "View: Adding BLOB proxy: "
-            //    << file.name << std::endl;
-
             BlobProxy proxy;
             proxy.is_dirty = false;
             proxy.filename = file.name;
@@ -731,8 +727,8 @@ View::load_image_intern (ImageProxy* proxy, bool init_only)
         throw std::runtime_error("Empty proxy name");
 
     std::string absolute_path = util::fs::is_absolute(proxy->filename)
-                              ? proxy->filename
-                              : util::fs::join_path(this->path, proxy->filename);
+        ? proxy->filename
+        : util::fs::join_path(this->path, proxy->filename);
 
     if (init_only)
     {
