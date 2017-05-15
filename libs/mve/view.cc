@@ -150,7 +150,7 @@ View::load_view_from_mve_file  (std::string const& filename)
     }
 
     /* Read embeddings and populate view. */
-    for (std::size_t i = 0; i < embedding_buffers.size(); ++i)
+    for (ReadBuffer& buffer : embedding_buffers)
     {
         std::string line;
         std::getline(infile, line);
@@ -162,7 +162,6 @@ View::load_view_from_mve_file  (std::string const& filename)
         if (tokens.size() != 3)
             throw util::Exception("Invalid embedding: ", line);
 
-        ReadBuffer& buffer = embedding_buffers[i];
         std::size_t byte_size = util::string::convert<std::size_t>(tokens[2]);
         if (byte_size != buffer.first)
             throw util::Exception("Unexpected embedding size");
@@ -198,17 +197,17 @@ View::save_view_as (std::string const& user_path)
             throw util::FileException(safe_path, std::strerror(errno));
 
     /* Load all images and BLOBS. */
-    for (std::size_t i = 0; i < this->images.size(); ++i)
+    for (ImageProxy& image : this->images)
     {
         /* Image references will be copied on save. No need to load it here. */
-        if (!util::fs::is_absolute(this->images[i].filename))
-            this->load_image(this->images[i]);
-        this->images[i].is_dirty = true;
+        if (!util::fs::is_absolute(image.filename))
+            this->load_image(image);
+        image.is_dirty = true;
     }
-    for (std::size_t i = 0; i < this->blobs.size(); ++i)
+    for (BlobProxy& blob: this->blobs)
     {
-        this->load_blob(this->blobs[i]);
-        this->blobs[i].is_dirty = true;
+        this->load_blob(blob);
+        blob.is_dirty = true;
     }
 
     /* Save meta data, images and BLOBS, and free memory. */
@@ -233,29 +232,29 @@ View::save_view (void)
     }
 
     /* Save dirty images. */
-    for (std::size_t i = 0; i < this->images.size(); ++i)
+    for (ImageProxy& image : this->images)
     {
-        if (this->images[i].is_dirty)
+        if (image.is_dirty)
         {
-            this->save_image_intern(this->images[i]);
+            this->save_image_intern(image);
             saved += 1;
         }
     }
 
     /* Save dirty BLOBS. */
-    for (std::size_t i = 0; i < this->blobs.size(); ++i)
+    for (BlobProxy& blob : this->blobs)
     {
-        if (this->blobs[i].is_dirty)
+        if (blob.is_dirty)
         {
-            this->save_blob_intern(this->blobs[i]);
+            this->save_blob_intern(blob);
             saved += 1;
         }
     }
 
     /* Delete files of removed images and BLOBs. */
-    for (std::size_t i = 0; i < this->to_delete.size(); ++i)
+    for (std::string& file : to_delete)
     {
-        std::string fname = util::fs::join_path(this->path, this->to_delete[i]);
+        std::string fname = util::fs::join_path(this->path, file);
         if (util::fs::file_exists(fname.c_str())
             && !util::fs::unlink(fname.c_str()))
         {
@@ -524,13 +523,13 @@ View::set_blob (ByteImage::Ptr blob, std::string const& name)
     proxy.size = blob->get_byte_size();
     proxy.blob = blob;
 
-    for (std::size_t i = 0; i < this->blobs.size(); ++i)
-        if (this->blobs[i].name == name)
-        {
-            this->blobs[i] = proxy;
-            return;
-        }
-    this->blobs.push_back(proxy);
+    BlobProxies::iterator found = std::find_if(blobs.begin(), blobs.end(),
+        [name](BlobProxy& p){ return p.name == name; });
+
+    if (found != blobs.end())
+        *found = proxy;
+    else
+        this->blobs.push_back(proxy);
 }
 
 bool
@@ -638,9 +637,8 @@ void
 View::populate_images_and_blobs (std::string const& path)
 {
     util::fs::Directory dir(path);
-    for (std::size_t i = 0; i < dir.size(); ++i)
+    for (util::fs::File& file : dir)
     {
-        util::fs::File const& file = dir[i];
         if (file.name == VIEW_IO_META_FILE)
             continue;
 
@@ -940,35 +938,31 @@ View::save_blob_intern (BlobProxy& proxy)
 void
 View::debug_print (void)
 {
-    for (std::size_t i = 0; i < this->images.size(); ++i)
-        this->initialize_image(this->images[i]);
-    for (std::size_t i = 0; i < this->blobs.size(); ++i)
-        this->initialize_blob(this->blobs[i]);
+    for (ImageProxy& proxy: this->images)
+        this->initialize_image(proxy);
+    for (BlobProxy& proxy: this->blobs)
+        this->initialize_blob(proxy);
 
     std::cout << std::endl;
     std::cout << "Path: " << this->path << std::endl;
     std::cout << "View Name: " << this->get_value("view.name") << std::endl;
     std::cout << "View key/value pairs:" << std::endl;
 
-    typedef MetaData::KeyValueMap::const_iterator KeyValueIter;
-    for (KeyValueIter iter = this->meta_data.data.begin();
-        iter != this->meta_data.data.end(); iter++)
-        std::cout << "  " << iter->first << " = " << iter->second << std::endl;
+    for (auto entry:  this->meta_data.data)
+        std::cout << "  " << entry.first << " = " << entry.second << std::endl;
 
     std::cout << "View images:" << std::endl;
-    for (std::size_t i = 0; i < this->images.size(); ++i)
-    {
-        ImageProxy const& proxy = this->images[i];
+    for (ImageProxy& proxy: this->images) {
         std::cout << "  " << proxy.name << " (" << proxy.filename << ")"
-            << ", size " << proxy.width << "x" << proxy.height << "x" << proxy.channels
+            << ", size "
+            << proxy.width << "x" << proxy.height << "x" << proxy.channels
             << ", type " << proxy.type
             << (proxy.image != nullptr ? " (in memory)" : "") << std::endl;
     }
 
     std::cout << "View BLOBs:" << std::endl;
-    for (std::size_t i = 0; i < this->blobs.size(); ++i)
+    for (BlobProxy& proxy: this->blobs)
     {
-        BlobProxy const& proxy = this->blobs[i];
         std::cout << "  " << proxy.name << " (" << proxy.filename << ")"
             << ", size " << proxy.size << std::endl;
     }
