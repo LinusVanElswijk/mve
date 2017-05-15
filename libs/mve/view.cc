@@ -202,12 +202,12 @@ View::save_view_as (std::string const& user_path)
     {
         /* Image references will be copied on save. No need to load it here. */
         if (!util::fs::is_absolute(this->images[i].filename))
-            this->load_image(&this->images[i], false);
+            this->load_image(this->images[i], false);
         this->images[i].is_dirty = true;
     }
     for (std::size_t i = 0; i < this->blobs.size(); ++i)
     {
-        this->load_blob(&this->blobs[i], false);
+        this->load_blob(this->blobs[i], false);
         this->blobs[i].is_dirty = true;
     }
 
@@ -237,7 +237,7 @@ View::save_view (void)
     {
         if (this->images[i].is_dirty)
         {
-            this->save_image_intern(&this->images[i]);
+            this->save_image_intern(this->images[i]);
             saved += 1;
         }
     }
@@ -247,7 +247,7 @@ View::save_view (void)
     {
         if (this->blobs[i].is_dirty)
         {
-            this->save_blob_intern(&this->blobs[i]);
+            this->save_blob_intern(this->blobs[i]);
             saved += 1;
         }
     }
@@ -389,10 +389,10 @@ View::get_image (std::string const& name, ImageType type)
     if (found != images.end())
     {
         if (type == IMAGE_TYPE_UNKNOWN)
-            return this->load_image(&(*found), false);
-        this->initialize_image(&(*found), false);
+            return this->load_image(*found, false);
+        this->initialize_image(*found, false);
         if (found->type == type)
-            return this->load_image(&(*found), false);
+            return this->load_image(*found, false);
     }
     return ImageBase::Ptr();
 }
@@ -405,7 +405,7 @@ View::get_image_proxy (std::string const& name, ImageType type)
 
     if (found != images.end())
     {
-        this->initialize_image(&(*found), false);
+        this->initialize_image(*found, false);
         if (type == IMAGE_TYPE_UNKNOWN || found->type == type)
             return &(*found);
     }
@@ -422,7 +422,7 @@ View::has_image (std::string const& name, ImageType type)
         return false;
     if (type == IMAGE_TYPE_UNKNOWN)
         return true;
-    this->initialize_image(&(*found), false);
+    this->initialize_image(*found, false);
     return found->type == type;
 }
 
@@ -494,7 +494,7 @@ View::get_blob (std::string const& name)
     BlobProxies::iterator found = std::find_if(blobs.begin(), blobs.end(),
         [name](const BlobProxy& proxy) { return proxy.name == name; });
 
-    return found != blobs.end() ? this->load_blob(&(*found), false)
+    return found != blobs.end() ? this->load_blob(*found, false)
                                 : ByteImage::Ptr();
 }
 
@@ -507,7 +507,7 @@ View::get_blob_proxy (std::string const& name)
     if (found == blobs.end())
         return nullptr;
 
-    this->initialize_blob(&(*found), false);
+    this->initialize_blob(*found, false);
     return &(*found);
 }
 
@@ -699,65 +699,65 @@ View::replace_file (std::string const& old_fn, std::string const& new_fn)
 /* ---------------------------------------------------------------- */
 
 void
-View::initialize_image (ImageProxy* proxy, bool update)
+View::initialize_image (ImageProxy& proxy, bool update)
 {
-    if (proxy->is_initialized && !update)
+    if (proxy.is_initialized && !update)
         return;
     this->load_image_intern(proxy, true);
 }
 
 ImageBase::Ptr
-View::load_image (ImageProxy* proxy, bool update)
+View::load_image (ImageProxy& proxy, bool update)
 {
-    if (proxy->image != nullptr && !update)
-        return proxy->image;
+    if (proxy.image != nullptr && !update)
+        return proxy.image;
     this->load_image_intern(proxy, false);
-    return proxy->image;
+    return proxy.image;
 }
 
 void
-View::load_image_intern (ImageProxy* proxy, bool init_only)
+View::load_image_intern (ImageProxy& proxy, bool init_only)
 {
-    if (this->path.empty() && !util::fs::is_absolute(proxy->filename))
+    if (this->path.empty() && !util::fs::is_absolute(proxy.filename))
         throw std::runtime_error("View not initialized");
-    if (proxy->filename.empty())
+    if (proxy.filename.empty())
         throw std::runtime_error("Empty proxy filename");
-    if (proxy->name.empty())
+    if (proxy.name.empty())
         throw std::runtime_error("Empty proxy name");
 
-    std::string absolute_path = util::fs::is_absolute(proxy->filename)
-        ? proxy->filename
-        : util::fs::join_path(this->path, proxy->filename);
+    std::string absolute_path = util::fs::is_absolute(proxy.filename)
+        ? proxy.filename
+        : util::fs::join_path(this->path, proxy.filename);
 
     if (init_only)
     {
         image::ImageHeaders headers = image::load_file_headers(absolute_path);
-        proxy->is_dirty = false;
-        proxy->width = headers.width;
-        proxy->height = headers.height;
-        proxy->channels = headers.channels;
-        proxy->type = headers.type;
-        proxy->is_initialized = true;
+        proxy.is_dirty = false;
+        proxy.width = headers.width;
+        proxy.height = headers.height;
+        proxy.channels = headers.channels;
+        proxy.type = headers.type;
+        proxy.is_initialized = true;
         return;
     }
 
-    std::string ext4 = util::string::right(proxy->filename, 4);
-    std::string ext5 = util::string::right(proxy->filename, 5);
+    std::string ext4 = util::string::right(proxy.filename, 4);
+    std::string ext5 = util::string::right(proxy.filename, 5);
     ext4 = util::string::lowercase(ext4);
     ext5 = util::string::lowercase(ext5);
     if (ext4 == ".png" || ext4 == ".jpg" || ext5 == ".jpeg")
-        proxy->image = image::load_file(absolute_path);
+        proxy.image = image::load_file(absolute_path);
     else if (ext5 == ".mvei")
-        proxy->image = image::load_mvei_file(absolute_path);
+        proxy.image = image::load_mvei_file(absolute_path);
     else
         throw std::runtime_error("Unexpected image type");
 
-    proxy->is_dirty = false;
-    proxy->width = proxy->image->width();
-    proxy->height = proxy->image->height();
-    proxy->channels = proxy->image->channels();
-    proxy->type = proxy->image->get_type();
-    proxy->is_initialized = true;
+    proxy.is_dirty = false;
+    proxy.width = proxy.image->width();
+    proxy.height = proxy.image->height();
+    proxy.channels = proxy.image->channels();
+    proxy.type = proxy.image->get_type();
+    proxy.is_initialized = true;
 }
 
 namespace
@@ -773,54 +773,52 @@ namespace
 }
 
 void
-View::save_image_intern (ImageProxy* proxy)
+View::save_image_intern (ImageProxy& proxy)
 {
     if (this->path.empty())
         throw std::runtime_error("View not initialized");
-    if (proxy == nullptr)
-        throw std::runtime_error("Null proxy");
 
     /* An absolute filename indicates an image reference. Copy file. */
-    if (util::fs::is_absolute(proxy->filename))
+    if (util::fs::is_absolute(proxy.filename))
     {
-        std::string ext = get_file_extension(proxy->filename);
-        std::string fname = proxy->name + ext;
+        std::string ext = get_file_extension(proxy.filename);
+        std::string fname = proxy.name + ext;
         std::string pname = util::fs::join_path(this->path, fname);
-        util::fs::copy_file(proxy->filename.c_str(), pname.c_str());
-        proxy->filename = fname;
-        proxy->is_dirty = false;
+        util::fs::copy_file(proxy.filename.c_str(), pname.c_str());
+        proxy.filename = fname;
+        proxy.is_dirty = false;
         return;
     }
 
-    if (proxy->image == nullptr || proxy->width != proxy->image->width()
-        || proxy->height != proxy->image->height()
-        || proxy->channels != proxy->image->channels()
-        || proxy->type != proxy->image->get_type())
+    if (proxy.image == nullptr || proxy.width != proxy.image->width()
+        || proxy.height != proxy.image->height()
+        || proxy.channels != proxy.image->channels()
+        || proxy.type != proxy.image->get_type())
         throw std::runtime_error("Image specification mismatch");
 
     /* Generate a new filename for the image. */
     bool use_png_format = false;
-    if (proxy->image->get_type() == IMAGE_TYPE_UINT8
-        && proxy->image->channels() <= 4)
+    if (proxy.image->get_type() == IMAGE_TYPE_UINT8
+        && proxy.image->channels() <= 4)
         use_png_format = true;
 
-    std::string filename = proxy->name + (use_png_format ? ".png" : ".mvei");
-    std::string fname_orig = util::fs::join_path(this->path, proxy->filename);
+    std::string filename = proxy.name + (use_png_format ? ".png" : ".mvei");
+    std::string fname_orig = util::fs::join_path(this->path, proxy.filename);
     std::string fname_save = util::fs::join_path(this->path, filename);
     std::string fname_new = fname_save + ".new";
 
     /* Save the new image. */
     if (use_png_format)
         image::save_png_file(
-            std::dynamic_pointer_cast<ByteImage>(proxy->image), fname_new);
+            std::dynamic_pointer_cast<ByteImage>(proxy.image), fname_new);
     else
-        image::save_mvei_file(proxy->image, fname_new);
+        image::save_mvei_file(proxy.image, fname_new);
 
     /* On succesfull write, move the new file in place. */
     this->replace_file(fname_save, fname_new);
 
     /* If the original file was different (e.g. JPG to lossless), remove it. */
-    if (!proxy->filename.empty() && fname_save != fname_orig)
+    if (!proxy.filename.empty() && fname_save != fname_orig)
     {
         if (util::fs::file_exists(fname_orig.c_str())
             && !util::fs::unlink(fname_orig.c_str()))
@@ -828,44 +826,44 @@ View::save_image_intern (ImageProxy* proxy)
     }
 
     /* Fully update the proxy. */
-    proxy->is_dirty = false;
-    proxy->filename = filename;
-    proxy->width = proxy->image->width();
-    proxy->height = proxy->image->height();
-    proxy->channels = proxy->image->channels();
-    proxy->type = proxy->image->get_type();
-    proxy->is_initialized = true;
+    proxy.is_dirty = false;
+    proxy.filename = filename;
+    proxy.width = proxy.image->width();
+    proxy.height = proxy.image->height();
+    proxy.channels = proxy.image->channels();
+    proxy.type = proxy.image->get_type();
+    proxy.is_initialized = true;
 }
 
 /* ---------------------------------------------------------------- */
 
 void
-View::initialize_blob (BlobProxy* proxy, bool update)
+View::initialize_blob (BlobProxy& proxy, bool update)
 {
-    if (proxy->is_initialized && !update)
+    if (proxy.is_initialized && !update)
         return;
     this->load_blob_intern(proxy, true);
 }
 
 ByteImage::Ptr
-View::load_blob (BlobProxy* proxy, bool update)
+View::load_blob (BlobProxy& proxy, bool update)
 {
-    if (proxy->blob != nullptr && !update)
-        return proxy->blob;
+    if (proxy.blob != nullptr && !update)
+        return proxy.blob;
     this->load_blob_intern(proxy, false);
-    return proxy->blob;
+    return proxy.blob;
 }
 
 void
-View::load_blob_intern (BlobProxy* proxy, bool init_only)
+View::load_blob_intern (BlobProxy& proxy, bool init_only)
 {
     if (this->path.empty())
         throw std::runtime_error("View not initialized");
-    if (proxy->name.empty())
+    if (proxy.name.empty())
         return;
 
     /* Load blob and update meta data. */
-    std::string filename = util::fs::join_path(this->path, proxy->filename);
+    std::string filename = util::fs::join_path(this->path, proxy.filename);
     std::ifstream in(filename.c_str(), std::ios::binary);
     if (!in.good())
         throw util::FileException(filename, std::strerror(errno));
@@ -885,8 +883,8 @@ View::load_blob_intern (BlobProxy* proxy, bool init_only)
 
     if (init_only)
     {
-        proxy->size = size;
-        proxy->is_initialized = true;
+        proxy.size = size;
+        proxy.is_initialized = true;
         return;
     }
 
@@ -897,27 +895,27 @@ View::load_blob_intern (BlobProxy* proxy, bool init_only)
     if (!in.good())
         throw util::FileException(filename, "EOF while reading BLOB payload");
 
-    proxy->blob = blob;
-    proxy->size = size;
-    proxy->is_initialized = true;
+    proxy.blob = blob;
+    proxy.size = size;
+    proxy.is_initialized = true;
 }
 
 void
-View::save_blob_intern (BlobProxy* proxy)
+View::save_blob_intern (BlobProxy& proxy)
 {
     if (this->path.empty())
         throw std::runtime_error("View not initialized");
-    if (proxy == nullptr || proxy->blob == nullptr)
-        throw std::runtime_error("Null proxy or data");
-    if (proxy->blob->get_byte_size() != proxy->size)
+    if (proxy.blob == nullptr)
+        throw std::runtime_error("Null proxy data");
+    if (proxy.blob->get_byte_size() != proxy.size)
         throw std::runtime_error("BLOB size mismatch");
 
     /* If the object has never been saved, the filename is empty. */
-    if (proxy->filename.empty())
-        proxy->filename = proxy->name + ".blob";
+    if (proxy.filename.empty())
+        proxy.filename = proxy.name + ".blob";
 
     /* Create a .new file and save blob. */
-    std::string fname_orig = util::fs::join_path(this->path, proxy->filename);
+    std::string fname_orig = util::fs::join_path(this->path, proxy.filename);
     std::string fname_new = fname_orig + ".new";
 
     // Check if file exists? Create unique temp name?
@@ -926,8 +924,8 @@ View::save_blob_intern (BlobProxy* proxy)
         throw util::FileException(fname_new, std::strerror(errno));
 
     out.write(VIEW_IO_BLOB_SIGNATURE, VIEW_IO_BLOB_SIGNATURE_LEN);
-    out.write(reinterpret_cast<char const*>(&proxy->size), sizeof(uint64_t));
-    out.write(proxy->blob->get_byte_pointer(), proxy->blob->get_byte_size());
+    out.write(reinterpret_cast<char const*>(&proxy.size), sizeof(uint64_t));
+    out.write(proxy.blob->get_byte_pointer(), proxy.blob->get_byte_size());
     if (!out.good())
         throw util::FileException(fname_new, std::strerror(errno));
     out.close();
@@ -936,9 +934,9 @@ View::save_blob_intern (BlobProxy* proxy)
     this->replace_file(fname_orig, fname_new);
 
     /* Fully update the proxy. */
-    proxy->is_dirty = false;
-    proxy->size = proxy->blob->get_byte_size();
-    proxy->is_initialized = true;
+    proxy.is_dirty = false;
+    proxy.size = proxy.blob->get_byte_size();
+    proxy.is_initialized = true;
 }
 
 /* ---------------------------------------------------------------- */
@@ -947,9 +945,9 @@ void
 View::debug_print (void)
 {
     for (std::size_t i = 0; i < this->images.size(); ++i)
-        this->initialize_image(&this->images[i], false);
+        this->initialize_image(this->images[i], false);
     for (std::size_t i = 0; i < this->blobs.size(); ++i)
-        this->initialize_blob(&this->blobs[i], false);
+        this->initialize_blob(this->blobs[i], false);
 
     std::cout << std::endl;
     std::cout << "Path: " << this->path << std::endl;
