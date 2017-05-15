@@ -202,12 +202,12 @@ View::save_view_as (std::string const& user_path)
     {
         /* Image references will be copied on save. No need to load it here. */
         if (!util::fs::is_absolute(this->images[i].filename))
-            this->load_image(this->images[i], false);
+            this->load_image(this->images[i]);
         this->images[i].is_dirty = true;
     }
     for (std::size_t i = 0; i < this->blobs.size(); ++i)
     {
-        this->load_blob(this->blobs[i], false);
+        this->load_blob(this->blobs[i]);
         this->blobs[i].is_dirty = true;
     }
 
@@ -389,10 +389,10 @@ View::get_image (std::string const& name, ImageType type)
     if (found != images.end())
     {
         if (type == IMAGE_TYPE_UNKNOWN)
-            return this->load_image(*found, false);
-        this->initialize_image(*found, false);
+            return this->load_image(*found);
+        this->initialize_image(*found);
         if (found->type == type)
-            return this->load_image(*found, false);
+            return this->load_image(*found);
     }
     return ImageBase::Ptr();
 }
@@ -405,7 +405,7 @@ View::get_image_proxy (std::string const& name, ImageType type)
 
     if (found != images.end())
     {
-        this->initialize_image(*found, false);
+        this->initialize_image(*found);
         if (type == IMAGE_TYPE_UNKNOWN || found->type == type)
             return &(*found);
     }
@@ -422,7 +422,7 @@ View::has_image (std::string const& name, ImageType type)
         return false;
     if (type == IMAGE_TYPE_UNKNOWN)
         return true;
-    this->initialize_image(*found, false);
+    this->initialize_image(*found);
     return found->type == type;
 }
 
@@ -494,7 +494,7 @@ View::get_blob (std::string const& name)
     BlobProxies::iterator found = std::find_if(blobs.begin(), blobs.end(),
         [name](const BlobProxy& proxy) { return proxy.name == name; });
 
-    return found != blobs.end() ? this->load_blob(*found, false)
+    return found != blobs.end() ? this->load_blob(*found)
                                 : ByteImage::Ptr();
 }
 
@@ -507,7 +507,7 @@ View::get_blob_proxy (std::string const& name)
     if (found == blobs.end())
         return nullptr;
 
-    this->initialize_blob(*found, false);
+    this->initialize_blob(*found);
     return &(*found);
 }
 
@@ -699,19 +699,17 @@ View::replace_file (std::string const& old_fn, std::string const& new_fn)
 /* ---------------------------------------------------------------- */
 
 void
-View::initialize_image (ImageProxy& proxy, bool update)
+View::initialize_image (ImageProxy& proxy)
 {
-    if (proxy.is_initialized && !update)
-        return;
-    this->load_image_intern(proxy, true);
+    if (!proxy.is_initialized)
+        this->load_image_intern(proxy, true);
 }
 
 ImageBase::Ptr
-View::load_image (ImageProxy& proxy, bool update)
+View::load_image (ImageProxy& proxy)
 {
-    if (proxy.image != nullptr && !update)
-        return proxy.image;
-    this->load_image_intern(proxy, false);
+    if (proxy.image == nullptr)
+        this->load_image_intern(proxy, false);
     return proxy.image;
 }
 
@@ -838,19 +836,17 @@ View::save_image_intern (ImageProxy& proxy)
 /* ---------------------------------------------------------------- */
 
 void
-View::initialize_blob (BlobProxy& proxy, bool update)
+View::initialize_blob (BlobProxy& proxy)
 {
-    if (proxy.is_initialized && !update)
-        return;
-    this->load_blob_intern(proxy, true);
+    if (!proxy.is_initialized)
+        this->load_blob_intern(proxy, true);
 }
 
 ByteImage::Ptr
-View::load_blob (BlobProxy& proxy, bool update)
+View::load_blob (BlobProxy& proxy)
 {
-    if (proxy.blob != nullptr && !update)
-        return proxy.blob;
-    this->load_blob_intern(proxy, false);
+    if (proxy.blob == nullptr)
+        this->load_blob_intern(proxy, false);
     return proxy.blob;
 }
 
@@ -945,9 +941,9 @@ void
 View::debug_print (void)
 {
     for (std::size_t i = 0; i < this->images.size(); ++i)
-        this->initialize_image(this->images[i], false);
+        this->initialize_image(this->images[i]);
     for (std::size_t i = 0; i < this->blobs.size(); ++i)
-        this->initialize_blob(this->blobs[i], false);
+        this->initialize_blob(this->blobs[i]);
 
     std::cout << std::endl;
     std::cout << "Path: " << this->path << std::endl;

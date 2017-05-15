@@ -288,13 +288,13 @@ private:
     void populate_images_and_blobs (std::string const& path);
     void replace_file (std::string const& old_fn, std::string const& new_fn);
 
-    void initialize_image (ImageProxy& proxy, bool update);
-    ImageBase::Ptr load_image (ImageProxy& proxy, bool update);
+    void initialize_image (ImageProxy& proxy);
+    ImageBase::Ptr load_image (ImageProxy& proxy);
     void load_image_intern (ImageProxy& proxy, bool init_only);
     void save_image_intern (ImageProxy& proxy);
 
-    void initialize_blob (BlobProxy& proxy, bool update);
-    ByteImage::Ptr load_blob (BlobProxy& proxy, bool update);
+    void initialize_blob (BlobProxy& proxy);
+    ByteImage::Ptr load_blob (BlobProxy& proxy);
     void load_blob_intern (BlobProxy& proxy, bool init_only);
     void save_blob_intern (BlobProxy& proxy);
 
