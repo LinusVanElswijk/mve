@@ -271,8 +271,8 @@ public:
     /** Prints a formatted list of internal data. */
     void debug_print (void);
 
-    /* ------------------ Convenience Functions ------------------- */
-
+    View(const View&) = delete;
+    View& operator=(const View&) = delete;
 
 protected:
     /** Creates an uninitialized view. */
@@ -288,7 +288,6 @@ private:
     void populate_images_and_blobs (std::string const& path);
     void replace_file (std::string const& old_fn, std::string const& new_fn);
 
-    ImageProxy* find_image_intern (std::string const& name);
     void initialize_image (ImageProxy* proxy, bool update);
     ImageBase::Ptr load_image (ImageProxy* proxy, bool update);
     void load_image_intern (ImageProxy* proxy, bool init_only);

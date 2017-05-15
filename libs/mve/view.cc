@@ -383,13 +383,16 @@ View::set_camera (CameraInfo const& camera)
 ImageBase::Ptr
 View::get_image (std::string const& name, ImageType type)
 {
-    if (View::ImageProxy* proxy = this->find_image_intern(name))
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p) { return p.name == name; });
+
+    if (found != images.end())
     {
         if (type == IMAGE_TYPE_UNKNOWN)
-            return this->load_image(proxy, false);
-        this->initialize_image(proxy, false);
-        if (proxy->type == type)
-            return this->load_image(proxy, false);
+            return this->load_image(&(*found), false);
+        this->initialize_image(&(*found), false);
+        if (found->type == type)
+            return this->load_image(&(*found), false);
     }
     return ImageBase::Ptr();
 }
@@ -397,11 +400,14 @@ View::get_image (std::string const& name, ImageType type)
 View::ImageProxy const*
 View::get_image_proxy (std::string const& name, ImageType type)
 {
-    if (View::ImageProxy* proxy = this->find_image_intern(name))
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p) { return p.name == name; });
+
+    if (found != images.end())
     {
-        this->initialize_image(proxy, false);
-        if (type == IMAGE_TYPE_UNKNOWN || proxy->type == type)
-            return proxy;
+        this->initialize_image(&(*found), false);
+        if (type == IMAGE_TYPE_UNKNOWN || found->type == type)
+            return &(*found);
     }
     return nullptr;
 }
@@ -409,13 +415,15 @@ View::get_image_proxy (std::string const& name, ImageType type)
 bool
 View::has_image (std::string const& name, ImageType type)
 {
-    View::ImageProxy* proxy = this->find_image_intern(name);
-    if (proxy == nullptr)
+    ImageProxies::iterator found = std::find_if(images.begin(), images.end(),
+        [name](const ImageProxy& p) { return p.name == name; });
+
+    if (found == images.end())
         return false;
     if (type == IMAGE_TYPE_UNKNOWN)
         return true;
-    this->initialize_image(proxy, false);
-    return proxy->type == type;
+    this->initialize_image(&(*found), false);
+    return found->type == type;
 }
 
 void
@@ -689,15 +697,6 @@ View::replace_file (std::string const& old_fn, std::string const& new_fn)
 }
 
 /* ---------------------------------------------------------------- */
-
-View::ImageProxy*
-View::find_image_intern (std::string const& name)
-{
-    for (std::size_t i = 0; i < this->images.size(); ++i)
-        if (this->images[i].name == name)
-            return &this->images[i];
-    return nullptr;
-}
 
 void
 View::initialize_image (ImageProxy* proxy, bool update)
