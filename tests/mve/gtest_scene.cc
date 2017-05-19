@@ -7,6 +7,7 @@
 
 #include "mve/bundle_io.h"
 #include "mve/scene.h"
+#include "util/exception.h"
 #include "util/file_system.h"
 
 namespace {
@@ -120,6 +121,45 @@ TEST(SceneTest,
             scene_with_non_empty_bundle->get_bundle()));
 }
 
+//== Creating a scene with missing files or directories ========================
+
+TEST(SceneTest,
+     create_scene_throws_an_exception_if_the_directory_does_not_exist)
+{
+    std::string not_a_directory = tmpnam(nullptr);
+    EXPECT_THROW(mve::Scene::create(not_a_directory), util::Exception);
+}
+
+TEST(SceneTest,
+     create_scene_throws_an_exception_if_the_views_subdirectory_does_not_exist)
+{
+    OnScopeExit clean_up;
+
+    std::string directory_with_no_views_subdir = [&clean_up]() {
+        std::string directory = tmpnam(nullptr);
+        util::fs::mkdir(directory.c_str());
+        clean_up.unlink(directory);
+        std::string bundle_file = util::fs::join_path(directory, "synth_0.out");
+        mve::save_mve_bundle(make_bundle(0), bundle_file);
+        return directory;
+    }();
+    EXPECT_THROW(mve::Scene::create(directory_with_no_views_subdir),
+                 util::Exception);
+}
+
+TEST(SceneTest,
+     creating_a_scene_on_a_directory_with_no_bundle_file_makes_get_bundle_throw)
+{
+    OnScopeExit clean_up;
+
+    std::string directory_missing_bundle_file
+            = create_scene_on_disk(0, nullptr, clean_up);
+    mve::Scene::Ptr scene_missing_bundle
+            = mve::Scene::create(directory_missing_bundle_file);
+    EXPECT_THROW(scene_missing_bundle->get_bundle(),
+                 util::Exception);
+}
+
 //== Test loading into an existing scene =======================================
 
 TEST(SceneTest,
@@ -170,6 +210,61 @@ TEST(SceneTest,
     scene->load_scene(loaded_path);
     EXPECT_TRUE(bundle_cameras_match(load_bundle_directly_from(loaded_path),
                                      scene->get_bundle()));
+}
+
+//== Loading a scene with missing files or directories =========================
+
+TEST(SceneTest,
+     load_throws_an_exception_if_the_directory_does_not_exist)
+{
+    OnScopeExit clean_up;
+
+    std::string not_a_directory = tmpnam(nullptr);
+    mve::Scene::Ptr scene = [&clean_up](){
+        std::string path_to_scene =
+                create_scene_on_disk(0, make_bundle(0), clean_up);
+        return mve::Scene::create(path_to_scene);
+    }();
+    EXPECT_THROW(scene->load_scene(not_a_directory), util::Exception);
+}
+
+TEST(SceneTest,
+     load_throws_an_exception_if_the_views_subdirectory_does_not_exist)
+{
+    OnScopeExit clean_up;
+
+    std::string directory_with_no_views_subdir = [&clean_up]() {
+        std::string directory = tmpnam(nullptr);
+        util::fs::mkdir(directory.c_str());
+        clean_up.unlink(directory);
+        std::string bundle_file = util::fs::join_path(directory, "synth_0.out");
+        mve::save_mve_bundle(make_bundle(0), bundle_file);
+        return directory;
+    }();
+    std::string not_a_directory = tmpnam(nullptr);
+    mve::Scene::Ptr scene = [&clean_up](){
+        std::string path_to_scene =
+                create_scene_on_disk(0, make_bundle(0), clean_up);
+        return mve::Scene::create(path_to_scene);
+    }();
+    EXPECT_THROW(scene->load_scene(directory_with_no_views_subdir),
+                 util::Exception);
+}
+
+TEST(SceneTest,
+     loading_from_a_directory_with_no_bundle_file_makes_get_bundle_throw)
+{
+    OnScopeExit clean_up;
+
+    std::string directory_missing_bundle_file
+            = create_scene_on_disk(0, nullptr, clean_up);
+    mve::Scene::Ptr scene = [&clean_up](){
+        std::string path_to_scene =
+                create_scene_on_disk(0, make_bundle(0), clean_up);
+        return mve::Scene::create(path_to_scene);
+    }();
+    scene->load_scene(directory_missing_bundle_file);
+    EXPECT_THROW(scene->get_bundle(), util::Exception);
 }
 
 //== Test saving onto disk =====================================================
@@ -251,7 +346,6 @@ TEST(SceneTest,
 TEST(SceneTest,
      reset_bundle_restores_the_bundle_to_its_state_on_disk)
 {
-    using ViewList = mve::Scene::ViewList;
     OnScopeExit clean_up;
 
     mve::Scene::Ptr scene_with_dirty_bundle = [&clean_up](){
