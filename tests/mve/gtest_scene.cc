@@ -52,8 +52,7 @@ bool bundle_cameras_match(mve::Bundle::Ptr lhs, mve::Bundle::ConstPtr rhs);
 
 //== Test the initial state of a created scene =================================
 
-TEST(SceneTest,
-     a_created_scene_is_initialy_clean)
+TEST(SceneTest, ACreatedSceneIsInitialyClean)
 {
     OnScopeExit clean_up;
 
@@ -63,8 +62,7 @@ TEST(SceneTest,
     EXPECT_FALSE(scene->is_dirty());
 }
 
-TEST(SceneTest,
-     the_initial_path_of_a_created_scene_is_the_path_it_was_created_with)
+TEST(SceneTest, TheInitialPathOfACreatedSceneIsThePathItWasCreatedWith)
 {
     OnScopeExit clean_up;
 
@@ -73,8 +71,7 @@ TEST(SceneTest,
     EXPECT_EQ(scene_path, scene->get_path());
 }
 
-TEST(SceneTest,
-     the_initial_views_of_a_created_scene_match_with_that_scene_on_disk)
+TEST(SceneTest, TheInitialViewsOfACreatedSceneMatchWithThatSceneOnDisk)
 {
     using ViewList = mve::Scene::ViewList;
     OnScopeExit clean_up;
@@ -97,8 +94,7 @@ TEST(SceneTest,
                             scene_with_many_views->get_views()));
 }
 
-TEST(SceneTest,
-     the_initial_bundle_of_a_created_scene_matches_with_that_scene_on_disk)
+TEST(SceneTest, TheInitialBundleOfACreatedSceneMatchesWithThatSceneOnDisk)
 {
     OnScopeExit clean_up;
 
@@ -123,15 +119,13 @@ TEST(SceneTest,
 
 //== Creating a scene with missing files or directories ========================
 
-TEST(SceneTest,
-     create_scene_throws_an_exception_if_the_directory_does_not_exist)
+TEST(SceneTest, CreateSceneThrowsAnExceptionIfTheDirectoryDoesNotExist)
 {
     std::string not_a_directory = tmpnam(nullptr);
     EXPECT_THROW(mve::Scene::create(not_a_directory), util::Exception);
 }
 
-TEST(SceneTest,
-     create_scene_throws_an_exception_if_the_views_subdirectory_does_not_exist)
+TEST(SceneTest, CreateSceneThrowsAnExceptionIfTheViewsSubdirectoryDoesNotExist)
 {
     OnScopeExit clean_up;
 
@@ -147,8 +141,7 @@ TEST(SceneTest,
                  util::Exception);
 }
 
-TEST(SceneTest,
-     creating_a_scene_on_a_directory_with_no_bundle_file_makes_get_bundle_throw)
+TEST(SceneTest, CreatingASceneOnADirectoryWithNoBundleFileMakesGetBundleThrow)
 {
     OnScopeExit clean_up;
 
@@ -162,8 +155,7 @@ TEST(SceneTest,
 
 //== Test loading into an existing scene =======================================
 
-TEST(SceneTest,
-     when_load_is_called_on_a_scene_its_path_updates_accordingly)
+TEST(SceneTest, WhenLoadIsCalledOnASceneItsPathUpdatesAccordingly)
 {
     OnScopeExit clean_up;
 
@@ -178,8 +170,7 @@ TEST(SceneTest,
     EXPECT_EQ(directory_to_load, scene->get_path());
 }
 
-TEST(SceneTest,
-     when_load_is_called_on_a_scene_its_views_update_accordingly)
+TEST(SceneTest, WhenLoadIsCalledOnASceneItsViewsUpdateAccordingly)
 {
     using Views = mve::Scene::ViewList;
     OnScopeExit clean_up;
@@ -196,8 +187,7 @@ TEST(SceneTest,
     EXPECT_TRUE(views_match(views_from_disk, scene->get_views()));
 }
 
-TEST(SceneTest,
-     when_load_is_called_on_a_scene_its_bundle_updates_accordingly)
+TEST(SceneTest, WhenLoadIsCalledOnASceneItsBundleUpdatesAccordingly)
 {
     OnScopeExit clean_up;
 
@@ -214,8 +204,7 @@ TEST(SceneTest,
 
 //== Loading a scene with missing files or directories =========================
 
-TEST(SceneTest,
-     load_throws_an_exception_if_the_directory_does_not_exist)
+TEST(SceneTest, LoadThrowsAnExceptionIfTheDirectoryDoesNotExist)
 {
     OnScopeExit clean_up;
 
@@ -228,8 +217,7 @@ TEST(SceneTest,
     EXPECT_THROW(scene->load_scene(not_a_directory), util::Exception);
 }
 
-TEST(SceneTest,
-     load_throws_an_exception_if_the_views_subdirectory_does_not_exist)
+TEST(SceneTest, LoadThrowsAnExceptionIfTheViewsSubdirectoryDoesNotExist)
 {
     OnScopeExit clean_up;
 
@@ -251,8 +239,7 @@ TEST(SceneTest,
                  util::Exception);
 }
 
-TEST(SceneTest,
-     loading_from_a_directory_with_no_bundle_file_makes_get_bundle_throw)
+TEST(SceneTest, LoadingFromADirectoryWithNoBundleFileMakesGetBundleThrow)
 {
     OnScopeExit clean_up;
 
@@ -269,8 +256,7 @@ TEST(SceneTest,
 
 //== Test saving onto disk =====================================================
 
-TEST(SceneTest,
-     when_save_is_called_on_a_scene_the_scene_on_disk_updates_accordingly)
+TEST(SceneTest, WhenSaveIsCalledOnASceneTheSceneOnDiskUpdatesAccordingly)
 {
     using ViewList = mve::Scene::ViewList;
     OnScopeExit clean_up;
@@ -293,8 +279,7 @@ TEST(SceneTest,
     EXPECT_TRUE(views_match(loaded_views, dirty_scene->get_views()));
 }
 
-TEST(SceneTest,
-     when_save_bundle_is_called_on_a_scene_only_the_bundle_is_updated_on_disk)
+TEST(SceneTest, WhenSaveBundleIsCalledOnASceneOnlyTheBundleIsUpdatedOnDisk)
 {
     using ViewList = mve::Scene::ViewList;
     OnScopeExit clean_up;
@@ -317,8 +302,7 @@ TEST(SceneTest,
     EXPECT_FALSE(views_match(loaded_views, dirty_scene->get_views()));
 }
 
-TEST(SceneTest,
-     when_save_views_is_called_on_a_scene_only_the_views_are_updated_on_disk)
+TEST(SceneTest, WhenSaveViewsIsCalledOnASceneOnlyTheViewsAreUpdatedOnDisk)
 {
     using ViewList = mve::Scene::ViewList;
     OnScopeExit clean_up;
@@ -343,8 +327,7 @@ TEST(SceneTest,
 
 //== Test resetting a scene's bundle ===========================================
 
-TEST(SceneTest,
-     reset_bundle_restores_the_bundle_to_its_state_on_disk)
+TEST(SceneTest, ResetBundleRestoresTheBundleToItsStateOnDisk)
 {
     OnScopeExit clean_up;
 
@@ -363,8 +346,7 @@ TEST(SceneTest,
 
 //== Test the dirty state of a scene ===========================================
 
-TEST(SceneTest,
-     a_clean_scene_becomes_dirty_if_any_of_its_views_become_dirty)
+TEST(SceneTest, ACleanSceneBecomesDirtyIfAnyOfItsViewsBecomeDirty)
 {
     OnScopeExit clean_up;
 
@@ -377,8 +359,7 @@ TEST(SceneTest,
     EXPECT_TRUE(clean_scene->is_dirty());
 }
 
-TEST(SceneTest,
-     set_bundle_makes_a_clean_scene_dirty)
+TEST(SceneTest, SetBundleMakesACleanSceneDirty)
 {
     OnScopeExit clean_up;
 
@@ -391,8 +372,7 @@ TEST(SceneTest,
     EXPECT_TRUE(clean_scene->is_dirty());
 }
 
-TEST(SceneTest,
-     a_dirty_scene_remains_dirty_when_more_of_its_elements_become_dirty)
+TEST(SceneTest, ADirtySceneRemainsDirtyWhenMoreOfItsElementsBecomeDirty)
 {
     OnScopeExit clean_up;
 
@@ -411,8 +391,7 @@ TEST(SceneTest,
     EXPECT_TRUE(dirty_scene->is_dirty());
 }
 
-TEST(SceneTest,
-     saving_a_dirty_scene_cleans_it)
+TEST(SceneTest, SavingADirtySceneCleansIt)
 {
     OnScopeExit clean_up;
 
@@ -428,8 +407,7 @@ TEST(SceneTest,
     EXPECT_FALSE(dirty_scene->is_dirty());
 }
 
-TEST(SceneTest,
-     save_views_cleans_a_scene_if_only_its_views_are_dirty)
+TEST(SceneTest, SaveViewsCleansASceneIfOnlyItsViewsAreDirty)
 {
     OnScopeExit clean_up;
 
@@ -445,8 +423,7 @@ TEST(SceneTest,
     EXPECT_FALSE(scene_with_dirty_views_and_clean_bundle->is_dirty());
 }
 
-TEST(SceneTest,
-     save_views_does_not_clean_a_scene_if_its_bundle_is_dirty)
+TEST(SceneTest, SaveViewsDoesNotCleanASceneIfItsBundleIsDirty)
 {
     OnScopeExit clean_up;
 
@@ -461,8 +438,7 @@ TEST(SceneTest,
     EXPECT_TRUE(scene_with_dirty_bundle->is_dirty());
 }
 
-TEST(SceneTest,
-     save_bundle_cleans_a_scene_if_only_its_bundle_is_dirty)
+TEST(SceneTest, SaveBundleCleansASceneIfOnlyItsBundleIsDirty)
 {
     OnScopeExit clean_up;
 
@@ -477,8 +453,7 @@ TEST(SceneTest,
     EXPECT_FALSE(scene_with_dirty_bundle_and_clean_views->is_dirty());
 }
 
-TEST(SceneTest,
-     save_bundle_does_not_clean_a_scene_if_any_of_its_views_is_dirty)
+TEST(SceneTest, SaveBundleDoesNotCleanASceneIfAnyOfItsViewsAreDirty)
 {
     OnScopeExit clean_up;
 
@@ -494,8 +469,7 @@ TEST(SceneTest,
     EXPECT_TRUE(scene_with_dirty_view->is_dirty());
 }
 
-TEST(SceneTest,
-     reset_bundle_cleans_a_scene_if_only_its_bundle_is_dirty)
+TEST(SceneTest, ResetBundleCleansASceneIfOnlyItsBundleIsDirty)
 {
     OnScopeExit clean_up;
 
@@ -510,8 +484,7 @@ TEST(SceneTest,
     EXPECT_FALSE(scene_with_dirty_bundle_and_clean_views->is_dirty());
 }
 
-TEST(SceneTest,
-     reset_bundle_does_not_clean_a_scene_if_any_of_its_views_is_dirty)
+TEST(SceneTest, ResetBundleDoesNotCleanASceneIfAnyOfitsViewsIsDirty)
 {
     OnScopeExit clean_up;
 
@@ -527,8 +500,7 @@ TEST(SceneTest,
     EXPECT_TRUE(scene_with_dirty_bundle_and_clean_views->is_dirty());
 }
 
-TEST(SceneTest,
-     saving_the_dirty_views_of_a_scene_cleans_the_scene_if_its_bundle_is_clean)
+TEST(SceneTest, SavingTheDirtyViewsOfASceneCleansTheSceneIfItsBundleIsClean)
 {
     using View = mve::View::Ptr;
     OnScopeExit clean_up;
