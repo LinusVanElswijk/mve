@@ -37,7 +37,6 @@ private:
  */
 std::string create_scene_on_disk (const std::size_t view_count,
     const mve::Bundle::Ptr bundle, OnScopeExit& clean_up);
-
 void make_dirty (mve::View::Ptr view);
 void make_a_clean_view_dirty (mve::Scene::Ptr scene);
 mve::Scene::ViewList load_views_from (const std::string &scene_path);
