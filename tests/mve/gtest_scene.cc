@@ -629,9 +629,14 @@ views_match (mve::Scene::ViewList& lhs, mve::Scene::ViewList& rhs)
 bool
 bundle_cameras_match (mve::Bundle::Ptr lhs, mve::Bundle::ConstPtr rhs)
 {
-    const auto match = [](float l, float r)
+    constexpr auto is_invallid = [](const mve::CameraInfo& camera)
     {
-        constexpr float epsilon = 1e-5f;
+        return camera.flen == 0.0f;
+    };
+
+    constexpr auto match = [](float l, float r)
+    {
+        constexpr float epsilon = 1e-3f;
         return (r == 0.0f) ? l < epsilon : (std::abs((l / r) - 1.0f) < epsilon);
     };
 
@@ -652,10 +657,12 @@ bundle_cameras_match (mve::Bundle::Ptr lhs, mve::Bundle::ConstPtr rhs)
     {
         const mve::CameraInfo& left_cam = lhs->get_cameras()[i];
         const mve::CameraInfo& right_cam = rhs->get_cameras()[i];
+
+        if (is_invallid(left_cam))
+            return is_invallid(right_cam);
+
         if (!match(left_cam.flen, right_cam.flen)
-            || !match(left_cam.paspect, right_cam.paspect)
             || !match_n(left_cam.dist, right_cam.dist, 2)
-            || !match_n(left_cam.ppoint, right_cam.ppoint, 2)
             || !match_n(left_cam.trans, right_cam.trans, 3)
             || !match_n(left_cam.rot, right_cam.rot, 9))
             return false;
