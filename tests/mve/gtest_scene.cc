@@ -259,13 +259,10 @@ TEST(SceneTest, ResetBundleRestoresTheBundleToItsStateOnDisk)
 {
     OnScopeExit clean_up;
 
-    mve::Scene::Ptr scene_with_dirty_bundle = [&clean_up]()
-    {
-        std::string path = create_scene_on_disk(13, make_bundle(15), &clean_up);
-        mve::Scene::Ptr scene = mve::Scene::create(path);
-        scene->set_bundle(make_bundle(0));
-        return scene;
-    }();
+    std::string path = create_scene_on_disk(13, make_bundle(15), &clean_up);
+    mve::Scene::Ptr scene_with_dirty_bundle  = mve::Scene::create(path);
+    scene_with_dirty_bundle->set_bundle(make_bundle(0));
+
     scene_with_dirty_bundle->reset_bundle();
     EXPECT_TRUE(bundle_cameras_match(
         load_bundle_from(scene_with_dirty_bundle->get_path()),
@@ -423,7 +420,7 @@ create_scene_on_disk (std::size_t const view_count,
 
     for (std::size_t i = 0; i < view_count; ++i)
     {
-        const std::string view_directory_path = [&i, &views_directory]()
+        std::string const view_directory_path = [&i, &views_directory]()
         {
             std::stringstream stream;
             stream << fs::join_path(views_directory, "view_")
@@ -469,7 +466,7 @@ load_views_from (std::string const& scene_directory)
     mve::Scene::ViewList list;
     list.reserve(directory.size());
 
-    for (const util::fs::File& file : directory)
+    for (util::fs::File const& file : directory)
         list.push_back(mve::View::create(file.get_absolute_name()));
 
     return list;
