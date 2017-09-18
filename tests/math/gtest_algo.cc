@@ -91,33 +91,6 @@ TEST(AlgoTest, VectorCleanTest)
     EXPECT_EQ(vec[0], 21);
 }
 
-TEST(AlgoTest, MaxMinElementIdTest)
-{
-    {
-        float f[5] = { 1.0f, 0.5f, 0.0f, 0.2f, 0.4f };
-        std::size_t id = math::algo::min_element_id(f, f+5);
-        EXPECT_EQ(id, 2);
-        id = math::algo::max_element_id(f, f+5);
-        EXPECT_EQ(id, 0);
-    }
-
-    {
-        float f[5] = { -1.0f, 0.5f, 0.0f, 0.2f, 1.4f };
-        std::size_t id = math::algo::min_element_id(f, f+5);
-        EXPECT_EQ(id, 0);
-        id = math::algo::max_element_id(f, f+5);
-        EXPECT_EQ(id, 4);
-    }
-
-    {
-        float f[5] = { 1.0f, 0.5f, 1.1f, 0.2f, -0.4f };
-        std::size_t id = math::algo::min_element_id(f, f+5);
-        EXPECT_EQ(id, 4);
-        id = math::algo::max_element_id(f, f+5);
-        EXPECT_EQ(id, 2);
-    }
-}
-
 TEST(AlgoTest, SortValues)
 {
     int a, b, c;
